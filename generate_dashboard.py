@@ -123,7 +123,8 @@ def generate_html(maanden, ytd_omzet, ytd_kosten, ytd_resultaat, omzet_regels, k
     """Genereer de volledige HTML pagina"""
 
     ytd_marge_pct = pct(ytd_resultaat, ytd_omzet)
-    export_datum = pd.Timestamp.now().strftime("%-d %B %Y")
+    now = pd.Timestamp.now()
+    export_datum = f"{now.day} {now.strftime('%B %Y')}"
 
     # Bouw tab inhoud
     def maand_tabel(m):
