@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elztec — Financieel Dashboard 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:       #f4f3ef;
+    --surface:  #ffffff;
+    --border:   #e2e0d8;
+    --ink:      #1a1916;
+    --muted:    #8a8880;
+    --accent:   #1a6b4a;
+    --accent-l: #e8f4ef;
+    --red:      #c0392b;
+    --red-l:    #fdf0ee;
+    --blue:     #1a4a7a;
+    --blue-l:   #eaf0f8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Outfit', sans-serif;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(circle, #c8c5bc 1px, transparent 1px);
+    background-size: 24px 24px;
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 40px 24px 60px;
+  }
+
+  header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 40px;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .brand-name {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+
+  .brand-name em { font-style: normal; color: var(--accent); }
+
+  .brand-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .header-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+
+  .export-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: var(--accent-l);
+    color: var(--accent);
+    padding: 4px 10px;
+    border-radius: 4px;
+  }
+
+  .date-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 22px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.2s;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .kpi:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.08); transform: translateY(-2px); }
+  .kpi:nth-child(1) { animation-delay: 0.05s; }
+  .kpi:nth-child(2) { animation-delay: 0.10s; }
+  .kpi:nth-child(3) { animation-delay: 0.15s; }
+
+  .kpi-stripe {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    border-radius: 12px 0 0 12px;
+  }
+
+  .kpi.omzet  .kpi-stripe { background: var(--blue); }
+  .kpi.kosten .kpi-stripe { background: var(--red); }
+  .kpi.result .kpi-stripe { background: var(--accent); }
+
+  .kpi-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 14px;
+    padding-left: 12px;
+  }
+
+  .kpi-month-row { display: flex; gap: 16px; margin-bottom: 6px; }
+  .kpi-month { flex: 1; }
+
+  .kpi-month-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .kpi-val { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; line-height: 1; }
+  .kpi.omzet  .kpi-val { color: var(--blue); }
+  .kpi.kosten .kpi-val { color: var(--red); }
+  .kpi.result .kpi-val { color: var(--accent); }
+
+  .kpi-divider { height: 1px; background: var(--border); margin: 12px 0 10px; }
+
+  .kpi-ytd-row { display: flex; justify-content: space-between; align-items: baseline; }
+
+  .kpi-ytd-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .kpi-ytd-val { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+  .kpi.omzet  .kpi-ytd-val { color: var(--blue); }
+  .kpi.kosten .kpi-ytd-val { color: var(--red); }
+  .kpi.result .kpi-ytd-val { color: var(--accent); }
+
+  .charts-row {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    animation: fadeUp 0.5s ease both;
+    animation-delay: 0.2s;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .card-title { font-size: 14px; font-weight: 700; color: var(--ink); }
+
+  .card-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .marge-block { display: flex; flex-direction: column; gap: 16px; margin-top: 4px; }
+  .marge-item { display: flex; flex-direction: column; gap: 6px; }
+  .marge-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .marge-name { font-size: 13px; font-weight: 500; }
+
+  .marge-pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .marge-track { height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+
+  .marge-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 1.2s cubic-bezier(0.16,1,0.3,1);
+  }
+
+  .marge-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .breakdown-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 32px;
+    animation: fadeUp 0.5s ease both;
+    animation-delay: 0.25s;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--bg);
+    padding: 4px;
+    border-radius: 8px;
+    width: fit-content;
+  }
+
+  .tab {
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.15s;
+    font-family: 'Outfit', sans-serif;
+  }
+
+  .tab.active {
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+  thead th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--muted);
+    padding: 8px 10px;
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+    font-weight: 500;
+  }
+
+  thead th:first-child { text-align: left; }
+  tbody tr { transition: background 0.12s; }
+  tbody tr:hover { background: var(--bg); }
+
+  tbody td {
+    padding: 10px 10px;
+    border-bottom: 1px solid var(--border);
+    text-align: right;
+  }
+
+  tbody td:first-child { text-align: left; font-weight: 500; }
+
+  tbody tr.subtotal td {
+    font-weight: 700;
+    background: var(--bg);
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  tbody tr.subtotal td:first-child { color: var(--ink); }
+
+  .num-blue  { color: var(--blue)   !important; font-weight: 600; }
+  .num-red   { color: var(--red)    !important; font-weight: 600; }
+  .num-green { color: var(--accent) !important; font-weight: 600; }
+
+  .cat-header td {
+    padding: 8px 10px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    color: var(--muted) !important;
+    background: var(--bg) !important;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .footer-note {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 14px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .footer-note strong { color: var(--accent); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 720px) {
+    .kpi-row    { grid-template-columns: 1fr; }
+    .charts-row { grid-template-columns: 1fr; }
+    .kpi-val    { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <header>
+    <div>
+      <div class="brand-name">Elz<em>tec</em></div>
+      <div class="brand-sub">Financieel Dashboard — Boekjaar 2026</div>
+    </div>
+    <div class="header-meta">
+      <div class="export-tag">Exact Online Export</div>
+      <div class="date-tag">13 maart 2026 · Vincent Wedekind</div>
+    </div>
+  </header>
+
+  <div class="section-label">Kerngetallen per maand</div>
+  <div class="kpi-row">
+
+    <div class="kpi omzet">
+      <div class="kpi-stripe"></div>
+      <div class="kpi-title">Omzet</div>
+      <div class="kpi-month-row">
+        <div class="kpi-month">
+          <div class="kpi-month-label">Januari</div>
+          <div class="kpi-val">€&nbsp;82.353</div>
+        </div>
+        <div class="kpi-month">
+          <div class="kpi-month-label">Februari</div>
+          <div class="kpi-val">€&nbsp;57.156</div>
+        </div>
+      </div>
+      <div class="kpi-divider"></div>
+      <div class="kpi-ytd-row">
+        <div class="kpi-ytd-label">YTD Totaal</div>
+        <div class="kpi-ytd-val">€&nbsp;168.146</div>
+      </div>
+    </div>
+
+    <div class="kpi kosten">
+      <div class="kpi-stripe"></div>
+      <div class="kpi-title">Totale Kosten</div>
+      <div class="kpi-month-row">
+        <div class="kpi-month">
+          <div class="kpi-month-label">Januari</div>
+          <div class="kpi-val">€&nbsp;53.423</div>
+        </div>
+        <div class="kpi-month">
+          <div class="kpi-month-label">Februari</div>
+          <div class="kpi-val">€&nbsp;45.624</div>
+        </div>
+      </div>
+      <div class="kpi-divider"></div>
+      <div class="kpi-ytd-row">
+        <div class="kpi-ytd-label">YTD Totaal</div>
+        <div class="kpi-ytd-val">€&nbsp;112.934</div>
+      </div>
+    </div>
+
+    <div class="kpi result">
+      <div class="kpi-stripe"></div>
+      <div class="kpi-title">Nettoresultaat</div>
+      <div class="kpi-month-row">
+        <div class="kpi-month">
+          <div class="kpi-month-label">Januari</div>
+          <div class="kpi-val">€&nbsp;28.929</div>
+        </div>
+        <div class="kpi-month">
+          <div class="kpi-month-label">Februari</div>
+          <div class="kpi-val">€&nbsp;11.533</div>
+        </div>
+      </div>
+      <div class="kpi-divider"></div>
+      <div class="kpi-ytd-row">
+        <div class="kpi-ytd-label">YTD Totaal</div>
+        <div class="kpi-ytd-val">€&nbsp;55.212</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Omzet · Kosten · Resultaat</div>
+        <div class="card-badge">Jan – Feb 2026</div>
+      </div>
+      <canvas id="barChart" height="200"></canvas>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Nettomarge</div>
+        <div class="card-badge">% van omzet</div>
+      </div>
+      <div class="marge-block">
+        <div class="marge-item">
+          <div class="marge-top">
+            <span class="marge-name">Januari</span>
+            <span class="marge-pct" style="color:var(--accent)">35,1%</span>
+          </div>
+          <div class="marge-track">
+            <div class="marge-fill" id="mf1" style="width:0%;background:var(--accent)"></div>
+          </div>
+          <div class="marge-sub">€ 28.929 op € 82.353 omzet</div>
+        </div>
+        <div class="marge-item">
+          <div class="marge-top">
+            <span class="marge-name">Februari</span>
+            <span class="marge-pct" style="color:var(--blue)">20,2%</span>
+          </div>
+          <div class="marge-track">
+            <div class="marge-fill" id="mf2" style="width:0%;background:var(--blue)"></div>
+          </div>
+          <div class="marge-sub">€ 11.533 op € 57.156 omzet</div>
+        </div>
+        <div class="marge-item" style="margin-top:8px;padding-top:16px;border-top:1px solid var(--border)">
+          <div class="marge-top">
+            <span class="marge-name" style="font-weight:700">YTD Gemiddeld</span>
+            <span class="marge-pct" style="color:var(--accent);font-weight:700">32,8%</span>
+          </div>
+          <div class="marge-track">
+            <div class="marge-fill" id="mf3" style="width:0%;background:var(--accent)"></div>
+          </div>
+          <div class="marge-sub">€ 55.212 op € 168.146 omzet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="breakdown-card">
+    <div class="card-header">
+      <div class="card-title">Winst- en Verliesrekening — detail</div>
+      <div class="tabs">
+        <button class="tab active" onclick="showTab('jan',this)">Januari</button>
+        <button class="tab" onclick="showTab('feb',this)">Februari</button>
+        <button class="tab" onclick="showTab('ytd',this)">YTD</button>
+      </div>
+    </div>
+
+    <!-- JANUARI -->
+    <div id="tab-jan">
+      <table>
+        <thead><tr><th>Omschrijving</th><th>Bedrag</th></tr></thead>
+        <tbody>
+          <tr class="cat-header"><td colspan="2">Omzet</td></tr>
+          <tr><td>8001 · Omzet BEI</td><td class="num-blue">€ 20.665</td></tr>
+          <tr><td>8002 · Omzet VIAG</td><td class="num-blue">€ 52.715</td></tr>
+          <tr><td>8003 · Omzet Examen</td><td class="num-blue">€ 1.923</td></tr>
+          <tr><td>8012 · Omzet NEN 3140 Stipel</td><td class="num-blue">€ 7.050</td></tr>
+          <tr class="subtotal"><td>Totaal Omzet</td><td class="num-blue">€ 82.353</td></tr>
+
+          <tr class="cat-header"><td colspan="2">Kostprijs van de Omzet</td></tr>
+          <tr><td>7001 · Cursusleiders BEI</td><td class="num-red">€ 6.601</td></tr>
+          <tr><td>7002 · Cursusleiders VIAG</td><td class="num-red">€ 6.209</td></tr>
+          <tr><td>7003 · Examinators</td><td class="num-red">€ 1.248</td></tr>
+          <tr><td>7009 · Cursusleiders NEN 3140</td><td class="num-red">€ 1.504</td></tr>
+          <tr><td>7102 · Lesmaterialen VIAG</td><td class="num-red">€ 830</td></tr>
+          <tr><td>7108 · Lesmaterialen E-learnings</td><td class="num-red">€ 2.291</td></tr>
+          <tr><td>7250 · Commissie / Werving & Selectie</td><td class="num-red">€ 800</td></tr>
+          <tr class="subtotal"><td>Totaal Kostprijs</td><td class="num-red">€ 19.491</td></tr>
+          <tr class="subtotal"><td style="color:var(--accent)">Bruto Marge</td><td class="num-green">€ 62.862</td></tr>
+
+          <tr class="cat-header"><td colspan="2">Bedrijfskosten</td></tr>
+          <tr><td>Personeelskosten (lonen, sociaal, pensioen, management)</td><td class="num-red">€ 17.310</td></tr>
+          <tr><td>Overige personeelskosten (kantine, arbo)</td><td class="num-red">€ 1.513</td></tr>
+          <tr><td>Afschrijvingen</td><td class="num-red">€ 1.068</td></tr>
+          <tr><td>Huisvestingskosten</td><td class="num-red">€ 2.860</td></tr>
+          <tr><td>Vervoerskosten</td><td class="num-red">€ 1.639</td></tr>
+          <tr><td>Verkoopkosten / marketing</td><td class="num-red">€ 5.172</td></tr>
+          <tr><td>Financieringskosten</td><td class="num-red">€ 262</td></tr>
+          <tr><td>Algemene kosten (accountant, verzekering)</td><td class="num-red">€ 567</td></tr>
+          <tr><td>Kantoorkosten / automatisering</td><td class="num-red">€ 1.541</td></tr>
+          <tr><td>Organisatiekosten</td><td class="num-red">€ 2.000</td></tr>
+          <tr class="subtotal"><td>Totaal Bedrijfskosten</td><td class="num-red">€ 33.933</td></tr>
+
+          <tr class="subtotal"><td style="font-size:14px">✦ Nettoresultaat Januari</td><td class="num-green" style="font-size:14px">€ 28.929</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- FEBRUARI -->
+    <div id="tab-feb" style="display:none">
+      <table>
+        <thead><tr><th>Omschrijving</th><th>Bedrag</th></tr></thead>
+        <tbody>
+          <tr class="cat-header"><td colspan="2">Omzet</td></tr>
+          <tr><td>8001 · Omzet BEI</td><td class="num-blue">€ 21.410</td></tr>
+          <tr><td>8002 · Omzet VIAG</td><td class="num-blue">€ 25.980</td></tr>
+          <tr><td>8003 · Omzet Examen</td><td class="num-blue">€ 2.873</td></tr>
+          <tr><td>8006 · Omzet Basis E + W</td><td class="num-blue">€ 12.000</td></tr>
+          <tr><td>8007 · Omzet NEN & VCA</td><td class="num-blue">€ 1.750</td></tr>
+          <tr><td>8008 · Omzet E-learnings & Boeken</td><td class="num-blue">€ 194</td></tr>
+          <tr><td>8012 · NEN 3140 Stipel (correctieboeking)</td><td class="num-red">-€ 7.050</td></tr>
+          <tr class="subtotal"><td>Totaal Omzet</td><td class="num-blue">€ 57.156</td></tr>
+
+          <tr class="cat-header"><td colspan="2">Kostprijs van de Omzet</td></tr>
+          <tr><td>7001 · Cursusleiders BEI</td><td class="num-red">€ 5.481</td></tr>
+          <tr><td>7002 · Cursusleiders VIAG</td><td class="num-red">€ 3.652</td></tr>
+          <tr><td>7003 · Examinators</td><td class="num-red">€ 1.914</td></tr>
+          <tr><td>7006 · Cursusleiders Basis E + W</td><td class="num-red">€ 4.768</td></tr>
+          <tr><td>7009 · Cursusleiders NEN 3140</td><td class="num-red">€ 5.863</td></tr>
+          <tr><td>7102 · Lesmaterialen VIAG</td><td class="num-red">€ 677</td></tr>
+          <tr><td>7107 · Lesmaterialen NEN & VCA</td><td class="num-red">€ 599</td></tr>
+          <tr><td>7108 · Lesmaterialen E-learnings</td><td class="num-red">€ 651</td></tr>
+          <tr><td>7250 · Commissie / Werving & Selectie</td><td class="num-red">€ 1.600</td></tr>
+          <tr class="subtotal"><td>Totaal Kostprijs</td><td class="num-red">€ 25.204</td></tr>
+          <tr class="subtotal"><td style="color:var(--accent)">Bruto Marge</td><td class="num-green">€ 31.952</td></tr>
+
+          <tr class="cat-header"><td colspan="2">Bedrijfskosten</td></tr>
+          <tr><td>Personeelskosten (lonen, sociaal, pensioen, management)</td><td class="num-red">€ 7.639</td></tr>
+          <tr><td>Overige personeelskosten (kantine, arbo)</td><td class="num-red">€ 1.636</td></tr>
+          <tr><td>Huisvestingskosten</td><td class="num-red">€ 2.819</td></tr>
+          <tr><td>Verkoopkosten / marketing</td><td class="num-red">€ 3.855</td></tr>
+          <tr><td>Financieringskosten</td><td class="num-red">€ 30</td></tr>
+          <tr><td>Algemene kosten (accountant, verzekering)</td><td class="num-red">€ 514</td></tr>
+          <tr><td>Kantoorkosten / automatisering</td><td class="num-red">€ 1.926</td></tr>
+          <tr><td>Organisatiekosten</td><td class="num-red">€ 2.000</td></tr>
+          <tr class="subtotal"><td>Totaal Bedrijfskosten</td><td class="num-red">€ 20.419</td></tr>
+
+          <tr class="subtotal"><td style="font-size:14px">✦ Nettoresultaat Februari</td><td class="num-green" style="font-size:14px">€ 11.533</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- YTD -->
+    <div id="tab-ytd" style="display:none">
+      <table>
+        <thead>
+          <tr>
+            <th>Omschrijving</th>
+            <th>Januari</th>
+            <th>Februari</th>
+            <th>YTD Totaal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="subtotal"><td>Omzet</td><td class="num-blue">€ 82.353</td><td class="num-blue">€ 57.156</td><td class="num-blue">€ 168.146</td></tr>
+          <tr class="subtotal"><td>Kostprijs van omzet</td><td class="num-red">€ 19.491</td><td class="num-red">€ 25.204</td><td class="num-red">€ 50.011</td></tr>
+          <tr class="subtotal"><td style="color:var(--accent)">Bruto Marge</td><td class="num-green">€ 62.862</td><td class="num-green">€ 31.952</td><td class="num-green">€ 118.134</td></tr>
+          <tr class="subtotal"><td>Bedrijfskosten</td><td class="num-red">€ 33.933</td><td class="num-red">€ 20.419</td><td class="num-red">€ 62.923</td></tr>
+          <tr class="subtotal"><td style="font-size:14px">✦ Nettoresultaat</td><td class="num-green" style="font-size:14px">€ 28.929</td><td class="num-green" style="font-size:14px">€ 11.533</td><td class="num-green" style="font-size:14px">€ 55.212</td></tr>
+          <tr class="subtotal"><td>Nettomarge %</td><td style="color:var(--accent);font-weight:700">35,1%</td><td style="color:var(--blue);font-weight:700">20,2%</td><td style="color:var(--accent);font-weight:700">32,8%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    📁&nbsp;<span>Bron: <strong>Exact Online</strong> — Balans / Winst- en verliesrekening · Boekjaar 2026, periodes 1–2 · ElzTec B.V. (200)</span>
+  </div>
+
+</div>
+
+<script>
+const ctx = document.getElementById('barChart').getContext('2d');
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: ['Januari', 'Februari'],
+    datasets: [
+      {
+        label: 'Omzet',
+        data: [82353, 57156],
+        backgroundColor: 'rgba(26,74,122,0.85)',
+        borderRadius: 6,
+        borderSkipped: false,
+      },
+      {
+        label: 'Totale Kosten',
+        data: [53423, 45624],
+        backgroundColor: 'rgba(192,57,43,0.75)',
+        borderRadius: 6,
+        borderSkipped: false,
+      },
+      {
+        label: 'Resultaat',
+        data: [28929, 11533],
+        backgroundColor: 'rgba(26,107,74,0.85)',
+        borderRadius: 6,
+        borderSkipped: false,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          font: { family: 'Outfit', size: 12 },
+          color: '#1a1916',
+          padding: 16,
+          boxWidth: 12,
+          boxHeight: 12,
+          usePointStyle: true,
+          pointStyle: 'rectRounded',
+        }
+      },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.dataset.label}: € ${ctx.parsed.y.toLocaleString('nl-NL')}`
+        },
+        bodyFont: { family: 'JetBrains Mono', size: 12 },
+        titleFont: { family: 'Outfit', size: 13, weight: '600' },
+      }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { font: { family: 'Outfit', size: 13 }, color: '#1a1916' }
+      },
+      y: {
+        grid: { color: '#e2e0d8' },
+        ticks: {
+          font: { family: 'JetBrains Mono', size: 11 },
+          color: '#8a8880',
+          callback: v => '€ ' + (v/1000).toFixed(0) + 'k'
+        }
+      }
+    }
+  }
+});
+
+setTimeout(() => {
+  document.getElementById('mf1').style.width = '35.1%';
+  document.getElementById('mf2').style.width = '20.2%';
+  document.getElementById('mf3').style.width = '32.8%';
+}, 300);
+
+function showTab(id, btn) {
+  ['jan','feb','ytd'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === id ? '' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>
